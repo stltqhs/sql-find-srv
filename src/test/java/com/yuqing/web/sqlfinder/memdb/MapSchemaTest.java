@@ -59,7 +59,7 @@ public class MapSchemaTest {
 
     tableDataList.add(t1);
 
-    rootSchema.add("default", new MapSchema(tableDataList));
+    rootSchema.add("default", new MapSchema("default", tableDataList));
 
     Statement statement = connection.createStatement();
     ResultSet resultSet =

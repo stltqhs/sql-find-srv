@@ -1,7 +1,7 @@
 package com.yuqing.web.sqlfinder.memdb;
 
 import com.google.common.collect.ImmutableMap;
-import java.text.ParseException;
+import com.yuqing.web.sqlfinder.util.ValueConverter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -28,7 +28,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Pair;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,12 +40,19 @@ public class MapSchema extends AbstractSchema {
 
   private static final Logger LOG = LoggerFactory.getLogger(MapSchema.class);
 
+  private final String name;
+
   private final List<TableData> tableDataList;
 
   private @MonotonicNonNull Map<String, Table> tableMap;
 
-  public MapSchema(List<TableData> tableDataList) {
+  public MapSchema(String name, List<TableData> tableDataList) {
+    this.name = name;
     this.tableDataList = tableDataList;
+  }
+
+  public String getName() {
+    return name;
   }
 
   @Override
@@ -176,35 +182,11 @@ public class MapSchema extends AbstractSchema {
       int i = 0;
       for (TableColumn column : tableData.getColumns()) {
         Object value = row.get(column.getName());
-        if (column.getType() == Date.class) {
-          value = convertToDate(value);
-        }
+        value = ValueConverter.convertValue(column.getType(), value);
         flat[i] = value;
         i++;
       }
       return flat;
-    }
-
-    private Object convertToDate(Object value) {
-      if (value instanceof Date) {
-        return new java.sql.Date(((Date) value).getTime());
-      }
-      if (value instanceof Number) {
-        return new java.sql.Date(((Number) value).longValue());
-      }
-      if (value instanceof String) {
-        return new java.sql.Date(parseDate((String) value).getTime());
-      }
-      return value;
-    }
-
-    private Date parseDate(String value) {
-      try {
-        return DateUtils.parseDate(value, "yyyy-MM-dd HH:mm:ss.SSS");
-      } catch (ParseException e) {
-        LOG.warn("parse date {}", value, e);
-      }
-      return new Date(0);
     }
 
     private RelDataType toSqlType(Class type, JavaTypeFactory typeFactory) {
